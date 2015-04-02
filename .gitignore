@@ -13,6 +13,9 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+"DEG File Info.txt"
+.git/
+.settings/
 
 # =========================
 # Operating System Files
@@ -41,3 +44,5 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+DEG File Info.txt
