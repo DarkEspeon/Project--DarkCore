@@ -96,10 +96,10 @@ public class Mesh {
 	public void setID(int nID){ID = nID;}
 	public static Mesh HudMesh(){
 		List<Vertex2> verts = new ArrayList<>();
-		verts.add(new Vertex2(new Vector2f(-1, 1)));
-		verts.add(new Vertex2(new Vector2f(-1, -1)));
+		verts.add(new Vertex2(new Vector2f(0, 0)));
+		verts.add(new Vertex2(new Vector2f(1, 0)));
 		verts.add(new Vertex2(new Vector2f(1, 1)));
-		verts.add(new Vertex2(new Vector2f(1, -1)));
+		verts.add(new Vertex2(new Vector2f(0, 1)));
 		Mesh m = new Mesh(verts);
 		m.ID = ResourceManager.addMesh(m);
 		m.createVAO();
