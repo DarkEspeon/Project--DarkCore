@@ -10,6 +10,8 @@ uniform vec3 lightCol;
 
 uniform vec3 cameraPos;
 
+uniform float lightRadius;
+
 uniform float shineDamper;
 uniform float reflectivity;
 
@@ -33,12 +35,16 @@ vec4 calcLight(vec3 lightColor, vec3 lightPosi, vec3 LightDir, vec3 worldPos, ve
 			SpecularColor = vec4(lightColor, 1.0) * reflectivity * SpecularFactor;
 		}
 	}
-	return (DiffuseColor + SpecularColor);
+	return (AmbientColor + DiffuseColor + SpecularColor);
 }
 vec4 calcPointLight(vec3 worldPos, vec3 Normal){
 	vec3 LightDir = worldPos - lightPos;
 	float Distance = length(LightDir);
 	LightDir = normalize(LightDir);
+	
+	if(Distance > lightRadius){
+		discard;
+	}
 	
 	vec4 Color = calcLight(lightCol, lightPos, LightDir, worldPos, Normal);
 	

@@ -150,4 +150,10 @@ public class Maths {
 		else res = Matrix4f.mul(temp, res, res);
 		return res;
 	}
+	public static float getLightDist(Vector3f col, Vector3f att){
+		float maxCol = Math.max(Math.max(col.x, col.y), col.z);
+		float sqrt = att.y * att.y - 4 * att.z * (att.z - 256 * maxCol);
+		float dist = (float) ((-att.y + Math.sqrt(sqrt))/(2 * att.z));
+		return dist;
+	}
 }

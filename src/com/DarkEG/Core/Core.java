@@ -63,6 +63,10 @@ public class Core implements Runnable {
 	public static final int HEIGHT = 720;
 	public static final int FPS_CAP = 120;
 	
+	private static int frames = 0;
+	private static int updates = 0;
+	private static long lastFPSTime = System.currentTimeMillis();
+	
 	private static long lastFrameTime;
 	private static float delta;
 	
@@ -78,7 +82,7 @@ public class Core implements Runnable {
 	
 	public Entity player = new Entity();
 	public Entity camera = new Entity();
-	public Light sun = new Light(new Vector3f(0.4f, 0.4f, 0.4f), new Vector3f(1, 0.01f, 0.002f), new Vector3f(0, 20, 0));
+	public Light sun = new Light(new Vector3f(0.4f, 0.4f, 0.4f), new Vector3f(1, 0.1f, 0.01f), new Vector3f(0, 20, 0));
 	public Light l2 = new Light(new Vector3f(1f, 0f, 0f), new Vector3f(1, 0.01f, 0.002f), new Vector3f(20, 0, 0));
 	public Light l3 = new Light(new Vector3f(0f, 1f, 0f), new Vector3f(1, 0.01f, 0.002f), new Vector3f(0, -20, 0));
 	public Light l4 = new Light(new Vector3f(0f, 0f, 1f), new Vector3f(1, 0.01f, 0.002f), new Vector3f(-20, 0, 0));
@@ -191,7 +195,14 @@ public class Core implements Runnable {
 		init();
 		camera.setPos(0, 0, 0);
 		while(!Display.isCloseRequested()){
-			Display.setTitle("" + Core.getDelta());
+			if(System.currentTimeMillis() - Core.lastFPSTime > 1000){
+				Core.lastFPSTime += 1000;
+				Display.setTitle("FPS: " + Core.frames + " | UPS: " + Core.updates);
+				Core.frames = 0;
+				Core.updates = 0;
+			}
+			Core.frames++;
+			Core.updates++;
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			KBI.update();
 			MI.update();
@@ -200,7 +211,7 @@ public class Core implements Runnable {
 			Maths.createViewMatrix(camera);
 			player.update();
 			
-			player.Move(0, 0, 0, 0, 0, 1);
+			player.Move(0, 0, 0, 0, 0, 0);
 			
 			RenderCore.render(null);
 			updateDisplay();

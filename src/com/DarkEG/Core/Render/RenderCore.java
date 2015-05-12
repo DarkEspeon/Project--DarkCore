@@ -8,16 +8,12 @@ import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL11.GL_LINEAR;
 import static org.lwjgl.opengl.GL11.GL_ONE;
-import static org.lwjgl.opengl.GL11.GL_QUADS;
-import static org.lwjgl.opengl.GL11.glBegin;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL11.glCullFace;
 import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL11.glEnd;
-import static org.lwjgl.opengl.GL11.glVertex2f;
 import static org.lwjgl.opengl.GL14.GL_FUNC_ADD;
 import static org.lwjgl.opengl.GL14.glBlendEquation;
 import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
@@ -28,6 +24,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.lwjgl.util.vector.Vector3f;
 
 import com.DarkEG.Core.Core;
 import com.DarkEG.Core.ResourceManager;
@@ -43,6 +41,7 @@ public class RenderCore {
 	private static FBO fbo = new FBO();
 	private static Shader preprocess;
 	private static Shader lighting;
+	private static Shader dir;
 	public static class Render{
 		private Entity e;
 		private Shader s;
@@ -82,6 +81,7 @@ public class RenderCore {
 			.getUniform("normalBuff")
 			.getUniform("posBuff")
 			.getUniform("depthBuff")
+			.getUniform("lightRadius")
 			.getUniform("att")
 			.getUniform("lightPos")
 			.getUniform("lightCol")
@@ -95,6 +95,30 @@ public class RenderCore {
 		lighting.loadUniform("posBuff", 2);
 		lighting.loadUniform("depthBuff", 3);
 		lighting.stop();
+		
+		dir = new Shader()
+		.addSubShader("src/com/DarkEG/Shaders/lighting.vs", GL_VERTEX_SHADER)
+		.addSubShader("src/com/DarkEG/Shaders/dirlight.fs", GL_FRAGMENT_SHADER)
+		.createProgram()
+		.bindAttribute(0, "pos")
+		.finalizeProgram()
+		.getUniform("viewMat")
+		.getUniform("colorBuff")
+		.getUniform("normalBuff")
+		.getUniform("posBuff")
+		.getUniform("depthBuff")
+		.getUniform("lightPos")
+		.getUniform("lightCol")
+		.getUniform("shineDamper")
+		.getUniform("reflectivity")
+		.getUniform("cameraPos");
+		
+		dir.start();
+		dir.loadUniform("colorBuff", 0);
+		dir.loadUniform("normalBuff", 1);
+		dir.loadUniform("posBuff", 2);
+		dir.loadUniform("depthBuff", 3);
+		dir.stop();
 		
 		fbo.addColorAttachment();
 		fbo.addColorAttachment();
@@ -208,12 +232,23 @@ public class RenderCore {
 		lighting.loadUniform("shineDamper", 5f);
 		lighting.loadUniform("reflectivity", 1f);
 		for(Light l : lights){
+			lighting.loadUniform("lightRadius", Maths.getLightDist(l.getColor(), l.getAttenuation()));
 			lighting.loadUniform("lightCol", l.getColor());
 			lighting.loadUniform("lightPos", l.getPos());
 			lighting.loadUniform("att", l.getAttenuation());
 			Core.renderQuad();
 		}
 		lighting.stop();
+		
+		dir.start();
+		dir.loadUniform("viewMat", camera.getViewMatrix());
+		dir.loadUniform("cameraPos", camera.getPosition());
+		dir.loadUniform("shineDamper", 5f);
+		dir.loadUniform("reflectivity", 0.1f);
+		dir.loadUniform("lightCol", new Vector3f(0.3f, 0.3f, 0.3f));
+		dir.loadUniform("lightPos", new Vector3f(0, 0, -1));
+		Core.renderQuad();
+		dir.stop();
 		
 		glDisable(GL_BLEND);
 	}
