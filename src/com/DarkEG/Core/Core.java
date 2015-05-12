@@ -19,7 +19,6 @@ import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL15.glBindBuffer;
 import static org.lwjgl.opengl.GL15.glBufferData;
 import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
-import static org.lwjgl.opengl.GL20.GL_VERTEX_SHADER;
 import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
@@ -50,6 +49,8 @@ import com.DarkEG.Core.Msg.MessageFlags;
 import com.DarkEG.Core.Msg.MsgHandler;
 import com.DarkEG.Core.Msg.MsgReceiver;
 import com.DarkEG.Core.Render.RenderCore;
+import com.DarkEG.Core.Resources.ResourceManager;
+import com.DarkEG.Core.Resources.ShaderManager;
 import com.DarkEG.Core.Shader.Shader;
 import com.DarkEG.Core.Texture.Texture;
 import com.DarkEG.Core.Util.Maths;
@@ -79,6 +80,7 @@ public class Core implements Runnable {
 	public MsgHandler msg = new MsgHandler();
 	public KBInput KBI;
 	public MouseInput MI;
+	public ResourceManager rm = new ResourceManager();
 	
 	public Entity player = new Entity();
 	public Entity camera = new Entity();
@@ -125,10 +127,10 @@ public class Core implements Runnable {
 	public void init(){
 		Maths.createProjectionMatrix();
 		
-		quad = ResourceManager.createVAO();
-		int tempI = ResourceManager.createVBO();
-		int tempV = ResourceManager.createVBO();
-		ResourceManager.bindVAO(quad);
+		quad = rm.vm.createVAO();
+		int tempI = rm.vm.createVBO();
+		int tempV = rm.vm.createVBO();
+		rm.vm.bindVAO(quad);
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempI);
 		IntBuffer buffer = BufferUtils.createIntBuffer(6);
@@ -143,12 +145,12 @@ public class Core implements Runnable {
 		glBufferData(GL_ARRAY_BUFFER, buf, GL_STATIC_DRAW);
 		glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
 		
-		ResourceManager.unbindVAO();
+		rm.vm.unbindVAO();
 		
-		s = new Shader()
-			.addSubShader("src/com/DarkEG/Shaders/Shader.vs", GL_VERTEX_SHADER)
-			.addSubShader("src/com/DarkEG/Shaders/Shader.fs", GL_FRAGMENT_SHADER)
-			.createProgram()
+		s = new Shader();
+		rm.sm.addSubShader(s, "src/com/DarkEG/Shaders/Shader.vs", ShaderManager.VERT);
+		rm.sm.addSubShader(s, "src/com/DarkEG/Shaders/Shader.fs", ShaderManager.FRAG);
+		s.createProgram()
 			.bindAttribute(0, "position")
 			.bindAttribute(1, "uv")
 			.bindAttribute(2, "norm")
@@ -162,10 +164,12 @@ public class Core implements Runnable {
 			.getUniform("shineDamper")
 			.getUniform("reflectivity")
 			.getUniform("skyColor");
+		
 		s.start();
 		s.loadUniform("projMat", Maths.getProjectionMatrix());
 		s.stop();
-		m = OBJLoader.loadMeshOBJ("ShipOne").setTexture(Texture.loadTexture(GL_TEXTURE_2D, "ShipOne")).createVAO();
+		
+		m = OBJLoader.loadMeshOBJ("ShipOne").setTexture(rm.tm.loadTexture(GL_TEXTURE_2D, "ShipOne")).createVAO();
 
 		ArrayList<Integer> keys = new ArrayList<Integer>();
 		ArrayList<Integer> mouse = new ArrayList<Integer>();
@@ -184,11 +188,11 @@ public class Core implements Runnable {
 		RenderCore.setCamera(camera);
 	}
 	public static void renderQuad(){
-		ResourceManager.bindVAO(quad);
+		core.rm.vm.bindVAO(quad);
 		glEnableVertexAttribArray(0);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glDisableVertexAttribArray(0);
-		ResourceManager.unbindVAO();
+		core.rm.vm.unbindVAO();
 	}
 	public void run(){
 		createDisplay();
@@ -217,7 +221,7 @@ public class Core implements Runnable {
 			updateDisplay();
 		}
 		msg.cleanUp();
-		ResourceManager.cleanUp();
+		rm.cleanUp();
 		destoryDisplay();
 	}
 	public static void sendMsg(MessageFlags flag, String msg){

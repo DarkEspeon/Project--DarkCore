@@ -18,7 +18,8 @@ import java.util.Map;
 import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 
-import com.DarkEG.Core.ResourceManager;
+import com.DarkEG.Core.Core;
+import com.DarkEG.Core.Resources.ResourceManager;
 import com.DarkEG.Core.Texture.Texture;
 
 public class Mesh {
@@ -225,7 +226,7 @@ public class Mesh {
 				indices[currentPos * 3 + 2] = f.getIndice(2);
 				currentPos++;
 			}
-			hasVAO = ResourceManager.loadVAO(indices, verts, norms, UVs, BIDs, BWeights, this);
+			hasVAO = Core.core.rm.vm.loadVAO(indices, verts, norms, UVs, BIDs, BWeights, this);
 		} else {
 			
 		}
@@ -243,10 +244,10 @@ public class Mesh {
 	}
 	public void preLoad(){
 		if(vao == -1){
-			ResourceManager.bindVBO(vboI);
+			Core.core.rm.vm.bindVBO(vboI);
 		} else {
-			ResourceManager.bindVAO(vao);
-			ResourceManager.bindVBO(vboI);
+			Core.core.rm.vm.bindVAO(vao);
+			Core.core.rm.vm.bindVBO(vboI);
 		}
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -269,7 +270,7 @@ public class Mesh {
 		glDisableVertexAttribArray(3);
 		glDisableVertexAttribArray(4);
 
-		ResourceManager.bindVBO(0);
-		ResourceManager.bindVAO(0);
+		Core.core.rm.vm.bindVBO(0);
+		Core.core.rm.vm.bindVAO(0);
 	}
 }

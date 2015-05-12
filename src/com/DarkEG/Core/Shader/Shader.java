@@ -1,24 +1,16 @@
 package com.DarkEG.Core.Shader;
 
-import static org.lwjgl.opengl.GL11.GL_FALSE;
-import static org.lwjgl.opengl.GL20.GL_COMPILE_STATUS;
 import static org.lwjgl.opengl.GL20.glBindAttribLocation;
-import static org.lwjgl.opengl.GL20.glCompileShader;
 import static org.lwjgl.opengl.GL20.glDeleteProgram;
 import static org.lwjgl.opengl.GL20.glDeleteShader;
 import static org.lwjgl.opengl.GL20.glDetachShader;
-import static org.lwjgl.opengl.GL20.glGetShaderInfoLog;
-import static org.lwjgl.opengl.GL20.glGetShaderi;
 import static org.lwjgl.opengl.GL20.glGetUniformLocation;
-import static org.lwjgl.opengl.GL20.glShaderSource;
 import static org.lwjgl.opengl.GL20.glUniform1f;
 import static org.lwjgl.opengl.GL20.glUniform1i;
 import static org.lwjgl.opengl.GL20.glUniform3f;
 import static org.lwjgl.opengl.GL20.glUniformMatrix4;
 import static org.lwjgl.opengl.GL20.glUseProgram;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,38 +21,10 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 
-import com.DarkEG.Core.ResourceManager;
+import com.DarkEG.Core.Core;
+import com.DarkEG.Core.Resources.ShaderManager.SubShader;
 
 public class Shader {
-	public static class SubShader{
-		private int shaderID, type;
-		public SubShader(String file, int type){
-			this.type = type;
-			StringBuilder shaderSource = new StringBuilder();
-			try{
-				BufferedReader reader = new BufferedReader(new FileReader(file));
-				String line;
-				while((line = reader.readLine()) != null){
-					shaderSource.append(line).append("\n");
-				}
-				reader.close();
-			} catch (Exception e){
-				System.err.println("Cound not read file! " + file);
-				e.printStackTrace();
-				System.exit(-1);
-			}
-			shaderID = ResourceManager.createShader(type);
-			glShaderSource(shaderID, shaderSource);
-			glCompileShader(shaderID);
-			if(glGetShaderi(shaderID, GL_COMPILE_STATUS) == GL_FALSE){
-				System.out.println(glGetShaderInfoLog(shaderID, 500));
-				System.err.println("Could not compile shader. FILENAME: " + file);
-				System.exit(-1);
-			}
-		}
-		public int getID(){return shaderID;}
-		public int getType(){return type;}
-	}
 	private static FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
 	protected int programID;
 	protected int ID;
@@ -98,9 +62,9 @@ public class Shader {
 		glUniform1i(uniforms.get(name), data);
 		return this;
 	}
-	public Shader createProgram(){ programID = ResourceManager.createProgram(shaders); ID = ResourceManager.addShader(this); return this; }
-	public Shader addSubShader(String file, int type){ shaders.add(new SubShader(file, type)); return this; }
+	public Shader createProgram(){ programID = Core.core.rm.sm.createProgram(shaders); ID = Core.core.rm.sm.addShader(this); return this; }
+	public Shader addSubShader(SubShader ss){ shaders.add(ss); return this; }
 	public Shader getUniform(String uniform){ uniforms.put(uniform, glGetUniformLocation(programID, uniform)); return this; }
 	public Shader bindAttribute(int attribute, String variable){ glBindAttribLocation(programID, attribute, variable); return this; }
-	public Shader finalizeProgram() { ResourceManager.finalizeProgram(programID); return this; }
+	public Shader finalizeProgram() { Core.core.rm.sm.finalizeProgram(programID); return this; }
 }

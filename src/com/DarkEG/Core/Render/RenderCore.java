@@ -28,10 +28,11 @@ import java.util.Map;
 import org.lwjgl.util.vector.Vector3f;
 
 import com.DarkEG.Core.Core;
-import com.DarkEG.Core.ResourceManager;
 import com.DarkEG.Core.Entity.Entity;
 import com.DarkEG.Core.Light.Light;
 import com.DarkEG.Core.Model.Mesh;
+import com.DarkEG.Core.Resources.ResourceManager;
+import com.DarkEG.Core.Resources.ShaderManager;
 import com.DarkEG.Core.Shader.Shader;
 import com.DarkEG.Core.Util.FBO;
 import com.DarkEG.Core.Util.Maths;
@@ -55,10 +56,10 @@ public class RenderCore {
 	private static Map<Integer, List<Render>> entityRender = new HashMap<>();
 	private static List<Light> lights = new ArrayList<>();
 	static{
-		preprocess = new Shader()
-			.addSubShader("src/com/DarkEG/Shaders/preprocesser.vs", GL_VERTEX_SHADER)
-			.addSubShader("src/com/DarkEG/Shaders/preprocesser.fs", GL_FRAGMENT_SHADER)
-			.createProgram()
+		preprocess = new Shader();
+		Core.core.rm.sm.addSubShader(preprocess, "src/com/DarkEG/Shaders/preprocesser.vs", ShaderManager.VERT);
+		Core.core.rm.sm.addSubShader(preprocess, "src/com/DarkEG/Shaders/preprocesser.fs", ShaderManager.FRAG);
+		preprocess.createProgram()
 			.bindAttribute(0, "pos")
 			.bindAttribute(1, "texCoord")
 			.bindAttribute(2, "norm")
@@ -70,10 +71,10 @@ public class RenderCore {
 		preprocess.start();
 		preprocess.loadUniform("projMat", Maths.getProjectionMatrix());
 		preprocess.stop();
-		lighting = new Shader()
-			.addSubShader("src/com/DarkEG/Shaders/lighting.vs", GL_VERTEX_SHADER)
-			.addSubShader("src/com/DarkEG/Shaders/lighting.fs", GL_FRAGMENT_SHADER)
-			.createProgram()
+		lighting = new Shader();
+		Core.core.rm.sm.addSubShader(lighting, "src/com/DarkEG/Shaders/lighting.vs", GL_VERTEX_SHADER);
+		Core.core.rm.sm.addSubShader(lighting, "src/com/DarkEG/Shaders/lighting.fs", GL_FRAGMENT_SHADER);
+		lighting.createProgram()
 			.bindAttribute(0, "pos")
 			.finalizeProgram()
 			.getUniform("viewMat")
@@ -96,22 +97,22 @@ public class RenderCore {
 		lighting.loadUniform("depthBuff", 3);
 		lighting.stop();
 		
-		dir = new Shader()
-		.addSubShader("src/com/DarkEG/Shaders/lighting.vs", GL_VERTEX_SHADER)
-		.addSubShader("src/com/DarkEG/Shaders/dirlight.fs", GL_FRAGMENT_SHADER)
-		.createProgram()
-		.bindAttribute(0, "pos")
-		.finalizeProgram()
-		.getUniform("viewMat")
-		.getUniform("colorBuff")
-		.getUniform("normalBuff")
-		.getUniform("posBuff")
-		.getUniform("depthBuff")
-		.getUniform("lightPos")
-		.getUniform("lightCol")
-		.getUniform("shineDamper")
-		.getUniform("reflectivity")
-		.getUniform("cameraPos");
+		dir = new Shader();
+		Core.core.rm.sm.addSubShader(dir, "src/com/DarkEG/Shaders/lighting.vs", GL_VERTEX_SHADER);
+		Core.core.rm.sm.addSubShader(dir, "src/com/DarkEG/Shaders/dirlight.fs", GL_FRAGMENT_SHADER);
+		dir.createProgram()
+			.bindAttribute(0, "pos")
+			.finalizeProgram()
+			.getUniform("viewMat")
+			.getUniform("colorBuff")
+			.getUniform("normalBuff")
+			.getUniform("posBuff")
+			.getUniform("depthBuff")
+			.getUniform("lightPos")
+			.getUniform("lightCol")
+			.getUniform("shineDamper")
+			.getUniform("reflectivity")
+			.getUniform("cameraPos");
 		
 		dir.start();
 		dir.loadUniform("colorBuff", 0);

@@ -1,13 +1,11 @@
 package com.DarkEG.Core.Entity.Component;
 
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
-import static org.lwjgl.opengl.GL13.glActiveTexture;
-
 import org.lwjgl.util.vector.Vector2f;
 
-import com.DarkEG.Core.ResourceManager;
+import com.DarkEG.Core.Core;
 import com.DarkEG.Core.Entity.Entity;
 import com.DarkEG.Core.Msg.MessageFlags;
+import com.DarkEG.Core.Resources.TextureManager;
 
 public class HudComponent extends Component{
 	private Vector2f position;
@@ -24,8 +22,7 @@ public class HudComponent extends Component{
 	}
 
 	public void update() {
-		glActiveTexture(GL_TEXTURE0);
-		ResourceManager.getTexture(tID).bind();
+		Core.core.rm.tm.bindTexture(TextureManager.TEX2D, tID);
 	}
 	
 }

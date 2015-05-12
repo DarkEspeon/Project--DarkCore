@@ -11,8 +11,8 @@ import java.util.List;
 import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 
-import com.DarkEG.Core.ResourceManager;
 import com.DarkEG.Core.Model.Mesh;
+import com.DarkEG.Core.Resources.ResourceManager;
  
 public class OBJLoader {
      

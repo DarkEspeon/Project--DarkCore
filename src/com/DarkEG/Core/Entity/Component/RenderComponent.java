@@ -1,11 +1,11 @@
 package com.DarkEG.Core.Entity.Component;
 
 import com.DarkEG.Core.Core;
-import com.DarkEG.Core.ResourceManager;
 import com.DarkEG.Core.Entity.Entity;
 import com.DarkEG.Core.Model.Mesh;
 import com.DarkEG.Core.Msg.MessageFlags;
 import com.DarkEG.Core.Render.RenderCore;
+import com.DarkEG.Core.Resources.ResourceManager;
 import com.DarkEG.Core.Shader.Shader;
 import com.DarkEG.Core.Util.Maths;
 
@@ -20,7 +20,7 @@ public class RenderComponent extends Component{
 	}
 
 	public void update() {
-		Shader s = ResourceManager.getShader(ShaderID);
+		Shader s = Core.core.rm.sm.getShader(ShaderID);
 		RenderCore.processEntity(MeshID, parent, s);
 	}
 

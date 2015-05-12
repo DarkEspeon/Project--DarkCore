@@ -35,7 +35,7 @@ import java.util.List;
 import org.lwjgl.BufferUtils;
 
 import com.DarkEG.Core.Core;
-import com.DarkEG.Core.ResourceManager;
+import com.DarkEG.Core.Resources.ResourceManager;
 
 public class FBO {
 	private int id;
@@ -45,7 +45,7 @@ public class FBO {
 		id = glGenFramebuffers();
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 		
-		depthTexture = ResourceManager.createTexture();
+		depthTexture = Core.core.rm.tm.createTexture();
 		glBindTexture(GL_TEXTURE_2D, depthTexture);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -56,7 +56,7 @@ public class FBO {
 	}
 	public void addColorAttachment(){
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
-		int texTemp = ResourceManager.createTexture();
+		int texTemp = Core.core.rm.tm.createTexture();
 		glBindTexture(GL_TEXTURE_2D, texTemp);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
