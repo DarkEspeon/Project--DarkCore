@@ -14,6 +14,7 @@ public class ResourceManager {
 	public TextureManager tm = new TextureManager();
 	public ShaderManager sm = new ShaderManager();
 	public VAOManager vm = new VAOManager();
+	public FBOManager fm = new FBOManager();
 	
 	private static List<Mesh> meshes = new ArrayList<>();
 	
@@ -40,5 +41,6 @@ public class ResourceManager {
 		tm.cleanUp();
 		sm.cleanUp();
 		vm.cleanUp();
+		fm.cleanUp();
 	}
 }

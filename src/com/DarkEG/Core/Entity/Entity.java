@@ -1,26 +1,18 @@
 package com.DarkEG.Core.Entity;
 
-import static org.lwjgl.opengl.GL11.GL_BLEND;
-import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
-import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
-import static org.lwjgl.opengl.GL11.glBlendFunc;
-import static org.lwjgl.opengl.GL11.glDisable;
-
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Quaternion;
 import org.lwjgl.util.vector.Vector3f;
-import org.lwjgl.util.vector.Vector4f;
 
 import com.DarkEG.Core.Core;
 import com.DarkEG.Core.Entity.Component.Component;
 import com.DarkEG.Core.Entity.Component.HudComponent;
 import com.DarkEG.Core.Entity.Component.LightComponent;
-import com.DarkEG.Core.Msg.MessageFlags;
+import com.DarkEG.Core.Render.RenderCore;
 import com.DarkEG.Core.Util.Maths;
 
 public class Entity {
@@ -34,8 +26,6 @@ public class Entity {
 	private Vector3f forward;
 	
 	private Quaternion rot = new Quaternion();
-	private Quaternion change = new Quaternion();
-	private Quaternion ro = new Quaternion(), pit = new Quaternion(), ya = new Quaternion();
 	private float scale = 1;
 	
 	private UUID id;
@@ -49,13 +39,7 @@ public class Entity {
 		forward = new Vector3f(0, 0, 1);
 	}
 	
-	public Entity addComponent(Component comp, EnumSet<MessageFlags> flags){
-		if(flags != null){
-			for(MessageFlags flag : flags){
-				Core.register(flag, comp);
-			}
-		}
-		
+	public Entity addComponent(Component comp){
 		if(comp instanceof HudComponent) huds.add((HudComponent)comp);
 		else if(comp instanceof LightComponent) light = ((LightComponent)comp);
 		else components.add(comp);
@@ -72,17 +56,16 @@ public class Entity {
 	public LightComponent getLight(){ return light; }
 	
 	public void renderHUD(){
+		Core.core.disableDepth();
+		Core.core.enableBlend();
+		Core.core.blendFunc(Core.SRCALPHA, Core.ONEMINUSSRCALPHA);
+		RenderCore.gui.start();
 		for(HudComponent c : huds){
-			if(!Core.DepthDisabled){
-				Core.core.disableDepth();
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			}
 			c.update();
 		}
-		if(Core.DepthDisabled){
-			Core.core.enableDepth();
-			glDisable(GL_BLEND);
-		}
+		RenderCore.gui.stop();
+		Core.core.disableBlend();
+		Core.core.enableDepth();
 	}
 	public UUID getUUID() { return id; }
 	public Vector3f getPosition(){ return eye; }

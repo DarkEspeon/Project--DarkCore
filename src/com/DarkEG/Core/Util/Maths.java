@@ -3,6 +3,7 @@ package com.DarkEG.Core.Util;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Quaternion;
+import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 
 import com.DarkEG.Core.Entity.Entity;
@@ -155,5 +156,12 @@ public class Maths {
 		float sqrt = att.y * att.y - 4 * att.z * (att.z - 256 * maxCol);
 		float dist = (float) ((-att.y + Math.sqrt(sqrt))/(2 * att.z));
 		return dist;
+	}
+	public static Matrix4f createTransformationMatrix(Vector2f translation, Vector2f scale) {
+		Matrix4f matrix = new Matrix4f();
+		matrix.setIdentity();
+		Matrix4f.translate(translation, matrix, matrix);
+		Matrix4f.scale(new Vector3f(scale.x, scale.y, 1f), matrix, matrix);
+		return matrix;
 	}
 }

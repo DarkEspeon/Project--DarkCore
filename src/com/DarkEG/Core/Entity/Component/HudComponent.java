@@ -4,25 +4,26 @@ import org.lwjgl.util.vector.Vector2f;
 
 import com.DarkEG.Core.Core;
 import com.DarkEG.Core.Entity.Entity;
-import com.DarkEG.Core.Msg.MessageFlags;
+import com.DarkEG.Core.Render.RenderCore;
 import com.DarkEG.Core.Resources.TextureManager;
+import com.DarkEG.Core.Util.Maths;
 
 public class HudComponent extends Component{
 	private Vector2f position;
 	private Vector2f scale;
 	private int tID;
 	
-	public HudComponent(Entity e, int texID) {
+	public HudComponent(Entity e, int texID, Vector2f pos, Vector2f s) {
 		super(e);
 		this.tID = texID;
-	}
-
-	public void recieve(MessageFlags flag, String msg) {
-		
+		this.position = pos;
+		this.scale = s;
 	}
 
 	public void update() {
-		Core.core.rm.tm.bindTexture(TextureManager.TEX2D, tID);
+		Core.rm.tm.bindTexture(TextureManager.TEX2D, tID, 0);
+		RenderCore.gui.loadUniform("transMat", Maths.createTransformationMatrix(position, scale));
+		Core.renderQuad();
 	}
 	
 }

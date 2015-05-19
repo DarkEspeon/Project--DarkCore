@@ -35,4 +35,7 @@ public class Texture {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(target, tID);
 	}
+	public int getID(){
+		return this.tID;
+	}
 }

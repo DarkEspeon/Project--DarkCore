@@ -5,7 +5,6 @@ import org.lwjgl.util.vector.Vector3f;
 
 import com.DarkEG.Core.Entity.Entity;
 import com.DarkEG.Core.Light.Light;
-import com.DarkEG.Core.Msg.MessageFlags;
 
 public class LightComponent extends Component {
 	public LightComponent(Entity e, Vector3f color, Vector3f attenuation){
@@ -24,10 +23,6 @@ public class LightComponent extends Component {
 	public Light getLight(){ return l; }
 
 	public void update() {
-		
-	}
-	
-	public void recieve(MessageFlags flag, String msg) {
 		
 	}
 	

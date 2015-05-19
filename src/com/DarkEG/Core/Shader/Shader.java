@@ -62,9 +62,9 @@ public class Shader {
 		glUniform1i(uniforms.get(name), data);
 		return this;
 	}
-	public Shader createProgram(){ programID = Core.core.rm.sm.createProgram(shaders); ID = Core.core.rm.sm.addShader(this); return this; }
+	public Shader createProgram(){ programID = Core.rm.sm.createProgram(shaders); ID = Core.rm.sm.addShader(this); return this; }
 	public Shader addSubShader(SubShader ss){ shaders.add(ss); return this; }
 	public Shader getUniform(String uniform){ uniforms.put(uniform, glGetUniformLocation(programID, uniform)); return this; }
 	public Shader bindAttribute(int attribute, String variable){ glBindAttribLocation(programID, attribute, variable); return this; }
-	public Shader finalizeProgram() { Core.core.rm.sm.finalizeProgram(programID); return this; }
+	public Shader finalizeProgram() { Core.rm.sm.finalizeProgram(programID); return this; }
 }

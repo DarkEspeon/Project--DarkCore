@@ -8,16 +8,21 @@ import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL11.GL_LINEAR;
 import static org.lwjgl.opengl.GL11.GL_ONE;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL11.glCullFace;
 import static org.lwjgl.opengl.GL11.glDisable;
 import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE1;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE2;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE3;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL14.GL_FUNC_ADD;
 import static org.lwjgl.opengl.GL14.glBlendEquation;
-import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
-import static org.lwjgl.opengl.GL20.GL_VERTEX_SHADER;
 import static org.lwjgl.opengl.GL30.glBlitFramebuffer;
 
 import java.util.ArrayList;
@@ -43,22 +48,13 @@ public class RenderCore {
 	private static Shader preprocess;
 	private static Shader lighting;
 	private static Shader dir;
-	public static class Render{
-		private Entity e;
-		private Shader s;
-		public Render(Entity e, Shader s){
-			this.e = e;
-			this.s = s;
-		}
-		public Entity getEntity(){return e;}
-		public Shader getShader(){return s;}
-	}
-	private static Map<Integer, List<Render>> entityRender = new HashMap<>();
+	public static Shader gui;
+	private static Map<Integer, List<Entity>> entityRender = new HashMap<>();
 	private static List<Light> lights = new ArrayList<>();
 	static{
 		preprocess = new Shader();
-		Core.core.rm.sm.addSubShader(preprocess, "src/com/DarkEG/Shaders/preprocesser.vs", ShaderManager.VERT);
-		Core.core.rm.sm.addSubShader(preprocess, "src/com/DarkEG/Shaders/preprocesser.fs", ShaderManager.FRAG);
+		Core.rm.sm.addSubShader(preprocess, "src/com/DarkEG/Shaders/preprocesser.vs", ShaderManager.VERT);
+		Core.rm.sm.addSubShader(preprocess, "src/com/DarkEG/Shaders/preprocesser.fs", ShaderManager.FRAG);
 		preprocess.createProgram()
 			.bindAttribute(0, "pos")
 			.bindAttribute(1, "texCoord")
@@ -72,8 +68,8 @@ public class RenderCore {
 		preprocess.loadUniform("projMat", Maths.getProjectionMatrix());
 		preprocess.stop();
 		lighting = new Shader();
-		Core.core.rm.sm.addSubShader(lighting, "src/com/DarkEG/Shaders/lighting.vs", GL_VERTEX_SHADER);
-		Core.core.rm.sm.addSubShader(lighting, "src/com/DarkEG/Shaders/lighting.fs", GL_FRAGMENT_SHADER);
+		Core.rm.sm.addSubShader(lighting, "src/com/DarkEG/Shaders/lighting.vs", ShaderManager.VERT);
+		Core.rm.sm.addSubShader(lighting, "src/com/DarkEG/Shaders/lighting.fs", ShaderManager.FRAG);
 		lighting.createProgram()
 			.bindAttribute(0, "pos")
 			.finalizeProgram()
@@ -98,8 +94,8 @@ public class RenderCore {
 		lighting.stop();
 		
 		dir = new Shader();
-		Core.core.rm.sm.addSubShader(dir, "src/com/DarkEG/Shaders/lighting.vs", GL_VERTEX_SHADER);
-		Core.core.rm.sm.addSubShader(dir, "src/com/DarkEG/Shaders/dirlight.fs", GL_FRAGMENT_SHADER);
+		Core.rm.sm.addSubShader(dir, "src/com/DarkEG/Shaders/lighting.vs", ShaderManager.VERT);
+		Core.rm.sm.addSubShader(dir, "src/com/DarkEG/Shaders/dirlight.fs", ShaderManager.FRAG);
 		dir.createProgram()
 			.bindAttribute(0, "pos")
 			.finalizeProgram()
@@ -121,19 +117,27 @@ public class RenderCore {
 		dir.loadUniform("depthBuff", 3);
 		dir.stop();
 		
+		gui = new Shader();
+		Core.rm.sm.addSubShader(gui, "src/com/DarkEG/Shaders/gui.vs", ShaderManager.VERT);
+		Core.rm.sm.addSubShader(gui, "src/com/DarkEG/Shaders/gui.fs", ShaderManager.FRAG);
+		gui.createProgram()
+			.bindAttribute(0, "pos")
+			.finalizeProgram()
+			.getUniform("transMat");
+		
 		fbo.addColorAttachment();
 		fbo.addColorAttachment();
 		fbo.addColorAttachment();
 		fbo.addColorAttachment();
 		fbo.finalizeBuffer();
 	}
-	public static void processEntity(int mesh, Entity e, Shader s){
+	public static void processEntity(int mesh, Entity e){
 		if(entityRender.containsKey(mesh)){
-			List<Render> entities = entityRender.get(mesh);
-			entities.add(new Render(e, s));
+			List<Entity> entities = entityRender.get(mesh);
+			entities.add(e);
 		} else {
-			List<Render> entities = new ArrayList<>();
-			entities.add(new Render(e, s));
+			List<Entity> entities = new ArrayList<>();
+			entities.add(e);
 			entityRender.put(mesh, entities);
 		}
 	}
@@ -143,30 +147,7 @@ public class RenderCore {
 	public static void setCamera(Entity cam){
 		RenderCore.camera = cam;
 	}
-	public static void render(Entity sun){
-		/*for(int x : entityRender.keySet()){
-			List<Render> es = entityRender.get(x);
-			Mesh m = ResourceManager.getMesh(x);
-			m.preLoad();
-			for(Render e : es){
-				e.getShader().start();
-				e.getShader().loadUniform("transMat", e.getEntity().getModelMatrix())
-					.loadUniform("viewMat", camera.getViewMatrix())
-					.loadUniform("lightPosition", sun.getPosition())
-					.loadUniform("lightColor", sun.getLight().getLight().getColor())
-					.loadUniform("attenuation", sun.getLight().getLight().getAttenuation())
-					.loadUniform("shineDamper", 5)
-					.loadUniform("reflectivity", 1)
-					.loadUniform("skyColor", new Vector3f(0.5f, 0.5f, 0.5f));
-				m.render();
-				e.getShader().stop();
-			}
-			m.postRender();
-		}*/
-		rendertemp();
-		entityRender.clear();
-	}
-	public static void rendertemp(){
+	public static void render(){
 		GeoPass();
 		LightPass();
 		FBO.bindDefaultBuffer();
@@ -183,6 +164,7 @@ public class RenderCore {
 		//glBlitFramebuffer(0, 0, Core.WIDTH, Core.HEIGHT, 0, 0, Core.WIDTH, Core.HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		fbo.setReadBuffer(3);
 		glBlitFramebuffer(0, 0, Core.WIDTH, Core.HEIGHT, 0, 0, Core.WIDTH, Core.HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		entityRender.clear();
 	}
 	private static void GeoPass(){
 		fbo.bindDrawBuff();
@@ -194,11 +176,11 @@ public class RenderCore {
 		preprocess.start();
 		preprocess.loadUniform("viewMat", camera.getViewMatrix());
 		for(int x : entityRender.keySet()){
-			List<Render> es = entityRender.get(x);
+			List<Entity> es = entityRender.get(x);
 			Mesh m = ResourceManager.getMesh(x);
 			m.preLoad();
-			for(Render e : es){
-				preprocess.loadUniform("transMat", e.getEntity().getModelMatrix());
+			for(Entity e : es){
+				preprocess.loadUniform("transMat", e.getModelMatrix());
 				m.render();
 			}
 			m.postRender();
@@ -250,6 +232,11 @@ public class RenderCore {
 		dir.loadUniform("lightPos", new Vector3f(0, 0, -1));
 		Core.renderQuad();
 		dir.stop();
+		
+		glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, 0);
+		glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, 0);
+		glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, 0);
+		glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, 0);
 		
 		glDisable(GL_BLEND);
 	}

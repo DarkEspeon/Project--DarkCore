@@ -1,11 +1,14 @@
 package com.DarkEG.Core;
 
+import static org.lwjgl.opengl.GL11.GL_BLEND;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.GL_ONE_MINUS_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_SRC_ALPHA;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLE_STRIP;
+import static org.lwjgl.opengl.GL11.glBlendFunc;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL11.glDisable;
@@ -18,45 +21,43 @@ import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL15.glBindBuffer;
 import static org.lwjgl.opengl.GL15.glBufferData;
-import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
 import static org.lwjgl.opengl.GL20.glDisableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.Sys;
-import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.PixelFormat;
+import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 
 import com.DarkEG.Core.Entity.Entity;
+import com.DarkEG.Core.Entity.Component.HudComponent;
 import com.DarkEG.Core.Entity.Component.PlayerMoveComponent;
 import com.DarkEG.Core.Entity.Component.RenderComponent;
 import com.DarkEG.Core.Input.KBInput;
 import com.DarkEG.Core.Input.MouseInput;
 import com.DarkEG.Core.Light.Light;
 import com.DarkEG.Core.Model.Mesh;
-import com.DarkEG.Core.Msg.MessageFlags;
-import com.DarkEG.Core.Msg.MsgHandler;
-import com.DarkEG.Core.Msg.MsgReceiver;
 import com.DarkEG.Core.Render.RenderCore;
 import com.DarkEG.Core.Resources.ResourceManager;
-import com.DarkEG.Core.Resources.ShaderManager;
-import com.DarkEG.Core.Shader.Shader;
+import com.DarkEG.Core.Resources.TextureManager;
 import com.DarkEG.Core.Texture.Texture;
 import com.DarkEG.Core.Util.Maths;
 import com.DarkEG.Core.Util.OBJLoader;
 
 public class Core implements Runnable {
+	
+	public static final int SRCALPHA = GL_SRC_ALPHA;
+	public static final int ONEMINUSSRCALPHA = GL_ONE_MINUS_SRC_ALPHA;
+	
 	private static Thread gameThread;
 	public static Core core;
 	
@@ -73,51 +74,24 @@ public class Core implements Runnable {
 	
 	public static boolean OGL30 = false;
 	public static boolean ARBVAO = false;
+	private static boolean running = true;
 	
 	public static boolean DepthDisabled = false;
 	public static int quad;
 	
-	public MsgHandler msg = new MsgHandler();
-	public KBInput KBI;
-	public MouseInput MI;
-	public ResourceManager rm = new ResourceManager();
+	public KBInput kbi = new KBInput();
+	public MouseInput mi = new MouseInput();
+	
+	public static ResourceManager rm = new ResourceManager();
 	
 	public Entity player = new Entity();
 	public Entity camera = new Entity();
 	public Light sun = new Light(new Vector3f(0.4f, 0.4f, 0.4f), new Vector3f(1, 0.1f, 0.01f), new Vector3f(0, 20, 0));
-	public Light l2 = new Light(new Vector3f(1f, 0f, 0f), new Vector3f(1, 0.01f, 0.002f), new Vector3f(20, 0, 0));
-	public Light l3 = new Light(new Vector3f(0f, 1f, 0f), new Vector3f(1, 0.01f, 0.002f), new Vector3f(0, -20, 0));
-	public Light l4 = new Light(new Vector3f(0f, 0f, 1f), new Vector3f(1, 0.01f, 0.002f), new Vector3f(-20, 0, 0));
 	
 	public Mesh m = null;
-	public Shader s = null;
 	
 	public Core(){
-		
-		KBInput.keyTypes.add("Movement", 0);
-		MouseInput.keyTypes.add("Movement", 0);
-		
 		Maths.setUp();
-		KBI = new KBInput();
-		MI = new MouseInput();
-		List<Integer> Keys = new ArrayList<>();
-		
-		Keys.add(Keyboard.KEY_W);
-		Keys.add(Keyboard.KEY_A);
-		Keys.add(Keyboard.KEY_S);
-		Keys.add(Keyboard.KEY_D);
-		Keys.add(Keyboard.KEY_Q);
-		Keys.add(Keyboard.KEY_E);
-		Keys.add(Keyboard.KEY_SPACE);
-		Keys.add(Keyboard.KEY_LSHIFT);
-		
-		KBI.registerKeys(KBInput.keyTypes.getY("Movement"), Keys);
-		
-		Keys = new ArrayList<>();
-		Keys.add(MouseInput.DX);
-		Keys.add(MouseInput.DY);
-		
-		MI.registerData(MouseInput.keyTypes.getY("Movement"), Keys);
 	}
 	
 	public void start(){
@@ -128,71 +102,39 @@ public class Core implements Runnable {
 		Maths.createProjectionMatrix();
 		
 		quad = rm.vm.createVAO();
-		int tempI = rm.vm.createVBO();
 		int tempV = rm.vm.createVBO();
 		rm.vm.bindVAO(quad);
 		
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempI);
-		IntBuffer buffer = BufferUtils.createIntBuffer(6);
-		buffer.put(0).put(1).put(2).put(2).put(1).put(3);
-		buffer.flip();
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer, GL_STATIC_DRAW);
-		
 		glBindBuffer(GL_ARRAY_BUFFER, tempV);
 		FloatBuffer buf = BufferUtils.createFloatBuffer(8);
-		buf.put(-1.0f).put(1.0f).put(1.0f).put(1.0f).put(1.0f).put(-1.0f).put(-1.0f).put(-1.0f);
+		buf.put(-1.0f).put(1.0f).put(-1.0f).put(-1.0f).put(1.0f).put(1.0f).put(1.0f).put(-1.0f);
 		buf.flip();
 		glBufferData(GL_ARRAY_BUFFER, buf, GL_STATIC_DRAW);
 		glVertexAttribPointer(0, 2, GL_FLOAT, false, 0, 0);
 		
 		rm.vm.unbindVAO();
 		
-		s = new Shader();
-		rm.sm.addSubShader(s, "src/com/DarkEG/Shaders/Shader.vs", ShaderManager.VERT);
-		rm.sm.addSubShader(s, "src/com/DarkEG/Shaders/Shader.fs", ShaderManager.FRAG);
-		s.createProgram()
-			.bindAttribute(0, "position")
-			.bindAttribute(1, "uv")
-			.bindAttribute(2, "norm")
-			.finalizeProgram()
-			.getUniform("projMat")
-			.getUniform("transMat")
-			.getUniform("viewMat")
-			.getUniform("lightPosition")
-			.getUniform("lightColor")
-			.getUniform("attenuation")
-			.getUniform("shineDamper")
-			.getUniform("reflectivity")
-			.getUniform("skyColor");
+		Texture temp = rm.tm.loadTexture(TextureManager.TEX2D, "ShipOne");
+		Texture temp2 = rm.tm.loadTexture(TextureManager.TEX2D, "Crosshair");
+		m = OBJLoader.loadMeshOBJ("ShipOne").setTexture(temp).createVAO();
+		camera.addComponent(new PlayerMoveComponent(camera));
 		
-		s.start();
-		s.loadUniform("projMat", Maths.getProjectionMatrix());
-		s.stop();
-		
-		m = OBJLoader.loadMeshOBJ("ShipOne").setTexture(rm.tm.loadTexture(GL_TEXTURE_2D, "ShipOne")).createVAO();
-
-		ArrayList<Integer> keys = new ArrayList<Integer>();
-		ArrayList<Integer> mouse = new ArrayList<Integer>();
-		keys.add(KBI.keyTypes.getY("Movement"));
-		mouse.add(MouseInput.keyTypes.getY("Movement"));
-		
-		camera.addComponent(new PlayerMoveComponent(camera, keys, mouse), null);
-		
-		int sID = s.getID();
 		int mID = m.getID();
 		
-		player.addComponent(new RenderComponent(player, mID, sID), null);
+		player.addComponent(new RenderComponent(player, mID));
+		player.addComponent(new HudComponent(player, temp2.getID(), new Vector2f(0f, 0f), new Vector2f(.01f, .02f)));
+		
 		player.Move(0, 0, 0);
 		
 		RenderCore.addLight(sun);
 		RenderCore.setCamera(camera);
 	}
 	public static void renderQuad(){
-		core.rm.vm.bindVAO(quad);
+		rm.vm.bindVAO(quad);
 		glEnableVertexAttribArray(0);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		glDisableVertexAttribArray(0);
-		core.rm.vm.unbindVAO();
+		rm.vm.unbindVAO();
 	}
 	public void run(){
 		createDisplay();
@@ -208,31 +150,27 @@ public class Core implements Runnable {
 			Core.frames++;
 			Core.updates++;
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			KBI.update();
-			MI.update();
+			kbi.update();
+			mi.update();
 			
 			camera.update();
 			Maths.createViewMatrix(camera);
 			player.update();
 			
-			player.Move(0, 0, 0, 0, 0, 0);
-			
-			RenderCore.render(null);
+			RenderCore.render();
+			player.renderHUD();
 			updateDisplay();
 		}
-		msg.cleanUp();
+		running = false;
 		rm.cleanUp();
 		destoryDisplay();
-	}
-	public static void sendMsg(MessageFlags flag, String msg){
-		core.msg.sendMsg(flag, msg);
-	}
-	public static void register(MessageFlags flag, MsgReceiver rec){
-		core.msg.register(flag, rec);
 	}
 	public static void main(String[] args){
 		core = new Core();
 		core.start();
+	}
+	public static boolean isRunning(){
+		return running;
 	}
 	public void createDisplay(){
 		ContextAttribs attribs = new ContextAttribs(3, 0).withForwardCompatible(true);
@@ -259,6 +197,15 @@ public class Core implements Runnable {
 	public void disableDepth(){
 		glDisable(GL_DEPTH_TEST);
 		DepthDisabled = true;
+	}
+	public void enableBlend(){
+		glEnable(GL_BLEND);
+	}
+	public void disableBlend(){
+		glDisable(GL_BLEND);
+	}
+	public void blendFunc(int src, int dst){
+		glBlendFunc(src, dst);
 	}
 	public void updateDisplay(){
 		Display.sync(FPS_CAP);
